@@ -1,0 +1,357 @@
+MODULE
+
+	regexp
+
+MODULE SUMMARY
+
+	Regular Expression Functions for Strings and Binaries
+
+DESCRIPTION
+
+	This module contains functions for regular expression matching
+	and substitution. It supports the POSIX Extended Regular
+	Expressions syntax and semantics, i.e. it always returns the
+	longest match.
+
+DATATYPES
+	Match = {Start,Length,MatchString}
+	SubMatch = {Match | undefined}
+	Start = Length = integer()
+
+	SubMatch is a tuple containing information about the
+	sub-expressions in a matching regular expression. For each
+	sub-expression match information is returned or 'undefined' if
+	that sub-expression is not activated. The sub-expressions are
+	numbered from the left in the order of their opening '(' and
+	have the same index in the SuMatch tuple.
+
+	Flags = [Flag]
+	 Flag = CompileFlag | ExecFlag
+	  CompileFlag = {subexpr,bool()} | {newline,bool()}
+
+	The compile flags are applied when a regular expression is
+	compiled and will remain in effect whenever it is used, even
+	if no flags are given at that time. They are:
+
+	{newline,bool()}
+	    Normally anchoring is applied to the input string as a
+	    whole so ^ and $ will match the beginning and end of the
+	    input string. Setting {newline,true} will modify this so
+	    they match the beginning and end of a LINE within the
+	    string and . matches any character EXCEPT a newline.
+
+	{subexpr,bool()}
+	    Setting {subexpr,true} will cause information about the
+	    sub-expressions within a regular expression to be
+	    returned. Normally this information is not kept.
+	    N.B. this will slow down the execution so it is
+	    recommended only to be done when this information is
+	    required.
+
+	There are currently no common execution flags.
+
+EXPORTS
+
+match(String, RegExp) -> MatchRes
+match(String, RegExp, Flags) -> MatchRes
+
+	Types:
+
+	String = RegExp = string()
+	MatchRes = {match,Match[,SubMatch]} | nomatch | {error,errordesc()}
+	Start = Length = integer()
+
+	Finds the longest, first match of the regular expression
+	RegExp in String. It returns as follows:
+
+	{match,Match[,SubMatch]}
+	    if the match succeeded. Start is the starting position of
+	    the match and Length is the length of the matching string.
+
+	nomatch
+	    if there were no matching characters.
+
+	{error,Error}
+	    if there was an error in RegExp.
+
+best_match(String, RegExp) -> MatchRes
+best_match(String, RegExp, Flags) -> MatchRes
+
+	Types:
+
+	String = RegExp = string()
+	MatchRes = {match,Match[,SubMatch]} | nomatch | {error,errordesc()}
+
+	Finds the first, longest match of the regular expression
+	RegExp in String. This function searches for the longest
+	possible match and returns the first one found if there are
+	several expressions of the same length. It returns as follows:
+
+	{match,Match[,SubMatch]}
+	    if the match succeeded. Start is the starting position of
+	    the match, and Length is the length of the matching
+	    string.  nomatch if there were no matching characters.
+
+	{error,Error}
+	    if there was an error in RegExp.
+
+matches(String, RegExp) -> MatchRes
+matches(String, RegExp, Flags) -> MatchRes
+
+	Types:
+
+	String = RegExp = string()
+	MatchRes = {match, Matches} | {error, errordesc()}
+	Matches = [Match]
+
+	Finds all non-overlapping matches of the expression RegExp in
+	String. It returns as follows:
+
+	{match, Matches}
+	    if the regular expression was correct. The list will be
+	    empty if there was no match. Each element in the list
+	    looks like {Start, Length}, where Start is the starting
+	    position of the match, and Length is the length of the
+	    matching string.
+
+	{error,Error}
+	    if there was an error in RegExp.
+
+sub(String, RegExp, New) -> SubRes
+sub(String, RegExp, New, Flags) -> SubRes
+
+	Types:
+
+	String = RegExp = New = string()
+	SubRes = {ok,NewString,RepCount} | {error,errordesc()}
+	RepCount = integer()
+
+	Substitutes the first occurrence of a substring matching
+	RegExp in String with the string New. A & in the string New is
+	replaced by the matched substring of String. \& puts a literal
+	& into the replacement string. If the RegExp was compiled with
+	{subexpr,true} then it is also possible to use \N (1 =< N =<
+	9) to access the matching string for that sub-expression in
+	New. It returns as follows:
+
+	{ok,NewString,RepCount}
+	    if RegExp is correct. RepCount is the number of
+	    replacements which have been made (this will be either 0
+	    or 1).
+
+	{error, Error}
+	    if there is an error in RegExp.
+
+gsub(String, RegExp, New) -> SubRes
+gsub(String, RegExp, New, Flags) -> SubRes
+
+	Types:
+
+	String = RegExp = New = string()
+	SubRes = {ok,NewString,RepCount} | {error,errordesc()}
+	RepCount = integer()
+
+	The same as sub, except that all non-overlapping occurrences
+	of a substring matching RegExp in String are replaced by the
+	string New. It returns:
+
+	{ok,NewString,RepCount}
+	    if RegExp is correct. RepCount is the number of
+	    replacements which have been made.
+
+	{error, Error}
+	    if there is an error in RegExp.
+
+split(String, RegExp) -> SplitRes
+split(String, RegExp, Flags) -> SplitRes
+
+	Types:
+
+	String = RegExp = string()
+	SubRes = {ok,FieldList} | {error,errordesc()}
+	Fieldlist = [string() | SubMatch]
+
+	String is split into fields (sub-strings) by the regular
+	expression RegExp.
+
+	If the separator expression is " " (a single space), then the
+	fields are separated by blanks and/or tabs and leading and
+	trailing blanks and tabs are discarded. For all other values
+	of the separator, leading and trailing blanks and tabs are not
+	discarded. It returns:
+
+	{ok, FieldList}
+	    to indicate that the string has been split up into the
+	    fields of FieldList.
+
+	{error, Error}
+	    if there is an error in RegExp.
+
+sh_to_awk(ShRegExp) -> AwkRegExp
+
+	Types:
+
+	ShRegExp AwkRegExp = string()
+	SubRes = {ok,NewString,RepCount} | {error,errordesc()}
+	RepCount = integer()
+
+	Converts the sh type regular expression ShRegExp into a full
+	AWK regular expression. Returns the converted regular
+	expression string. sh expressions are used in the shell for
+	matching file names and have the following special characters:
+
+	*
+	    matches any string including the null string.
+	?
+	    matches any single character.
+	[...]
+	    matches any of the enclosed characters. Character ranges
+	    are specified by a pair of characters separated by a -. If
+	    the first character after [ is a !, then any character not
+	    enclosed is matched.
+
+	It may sometimes be more practical to use sh type expansions
+	as they are simpler and easier to use, even though they are
+	not as powerful.
+
+parse(RegExp) -> ParseRes
+
+	Types:
+
+	RegExp = string()
+	ParseRes = {ok,RE} | {error,errordesc()}
+
+	Parses the regular expression RegExp and builds the internal
+	representation used in the other regular expression
+	functions. Such representations can be used in all of the
+	other functions instead of a regular expression string. It
+	returns:
+
+	{ok, ParseReg}
+	    if RegExp is correct and ParseReg is the parsed
+	    representation.
+
+	{error, Error}
+	    if there is an error in RegExpString.
+
+compile(RegExp | ParseReg) -> CompRes
+compile(RegExp | ParseReg, Flags) -> CompRes
+
+	Types:
+
+	RegExp = string()
+	CompRes = {ok,RE} | {error,errordesc()}
+
+	Compile a regular expression or a parsed regular expression
+	into an internal NFA or DFA format which can then be used in
+	all the other interface functions. It returns:
+
+	{ok, CompReg}
+	    if RegExp or ParseReg is correct and CompReg is the
+	    compiled representation.
+
+	{error, Error}
+	    if there is an error in RegExp.
+
+format_error(ErrorDescriptor) -> Chars
+
+	Types:
+
+	ErrorDescriptor = errordesc()
+	Chars = [char() | Chars]
+
+	Returns a string which describes the error ErrorDescriptor
+	returned when there is an error in a regular expression.
+
+Regular Expressions
+
+	The regular expressions allowed here is a subset of the set
+	found in egrep and in the AWK programming language, as defined
+	in the book, The AWK Programming Language, by A. V. Aho,
+	B. W. Kernighan, P. J. Weinberger. They are composed of the
+	following characters:
+
+	c
+	    matches the non-metacharacter c.
+	\c
+	    matches the escape sequence or literal character c.
+	.
+	    matches any character.
+	^
+	    matches the beginning of a string.
+	$
+	    matches the end of a string.
+	[abc...]
+	    character class, which matches any of the characters
+	    abc... Character ranges are specified by a pair of
+	    characters separated by a -.
+	[^abc...]
+	    negated character class, which matches any character
+	    except abc....
+	r1 | r2
+	    alternation. It matches either r1 or r2.
+	r1r2
+	    concatenation. It matches r1 and then r2.
+	r+
+	    matches one or more rs.
+	r*
+	    matches zero or more rs.
+	r?
+	    matches zero or one rs.
+	(r)
+	    grouping. It matches r.
+
+	The escape sequences allowed are the same as for Erlang strings:
+
+	\b
+	    backspace
+	\f
+	    form feed
+	\n
+	    newline (line feed)
+	\r
+	    carriage return
+	\t
+	    tab
+	\e
+	    escape
+	\v
+	    vertical tab
+	\s
+	    space
+	\d
+	    delete
+	\ddd
+	    the octal value ddd
+	\c
+	    any other character literally, for example \\ for
+	    backslash, \" for ")
+
+	The following examples define Erlang data types:
+
+	Atoms     [a-z][0-9a-zA-Z_]*
+
+	Variables [A-Z_][0-9a-zA-Z_]*
+
+	Floats    (\+|-)?[0-9]+\.[0-9]+((E|e)(\+|-)?[0-9]+)?
+
+
+	Regular expressions are written as Erlang strings when used
+	with the functions in this module. This means that any \ or "
+	characters in a regular expression string must be written with
+	\ as they are also escape characters for the string. For
+	example, the regular expression string for Erlang floats is:
+
+	"(\\+|-)?[0-9]+\\.[0-9]+((E|e)(\\+|-)?[0-9]+)?".
+
+	It is not really necessary to have the escape sequences as
+	part of the regular expression syntax as they can always be
+	generated directly in the string. They are included for
+	completeness and can they can also be useful when generating
+	regular expressions, or when they are entered other than with
+	Erlang strings.
+
+AUTHORS
+	Robert Virding - support@erlang.ericsson.se
+
+	Copyright © 1991-2007 Ericsson AB
