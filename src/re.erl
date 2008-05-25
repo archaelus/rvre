@@ -1634,22 +1634,22 @@ step_s({S,Subs0}, Cur, Nfa, Seen, A, NewS, Ss) ->
 		%% Position states.
 		#pstate{t=bos,s=N} ->
 		    if element(2, Cur) == 1 ->
-			    step_s(N, Cur, Nfa, Seen1, A, NewS, Ss);
+			    step_s({N,Subs0}, Cur, Nfa, Seen1, A, NewS, Ss);
 		       true -> step_s(Ss, Cur, Nfa, Seen1, A, NewS)
 		    end;
 		#pstate{t=eos,s=N} ->
 		    if element(3, Cur) == eos ->
-			    step_s(N, Cur, Nfa, Seen1, A, NewS, Ss);
+			    step_s({N,Subs0}, Cur, Nfa, Seen1, A, NewS, Ss);
 		       true -> step_s(Ss, Cur, Nfa, Seen1, A, NewS)
 		    end;
 		#pstate{t=bol,s=N} ->
 		    if element(1, Cur) == $\n ; element(2, Cur) == 1 ->
-			    step_s(N, Cur, Nfa, Seen1, A, NewS, Ss);
+			    step_s({N,Subs0}, Cur, Nfa, Seen1, A, NewS, Ss);
 		       true -> step_s(Ss, Cur, Nfa, Seen1, A, NewS)
 		    end;
 		#pstate{t=eol,s=N} ->
 		    if element(3, Cur) == $\n ->
-			    step_s(N, Cur, Nfa, Seen1, A, NewS, Ss);
+			    step_s({N,Subs0}, Cur, Nfa, Seen1, A, NewS, Ss);
 		       true -> step_s(Ss, Cur, Nfa, Seen1, A, NewS)
 		    end;
 		%% Accept state.
