@@ -1,3 +1,28 @@
+%% Copyright (c) 2008 Robert Virding. All rights reserved.
+%%
+%% Redistribution and use in source and binary forms, with or without
+%% modification, are permitted provided that the following conditions
+%% are met:
+%%
+%% 1. Redistributions of source code must retain the above copyright
+%%    notice, this list of conditions and the following disclaimer.
+%% 2. Redistributions in binary form must reproduce the above copyright
+%%    notice, this list of conditions and the following disclaimer in the
+%%    documentation and/or other materials provided with the distribution.
+%%
+%% THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+%% "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+%% LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+%% FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+%% COPYRIGHT HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+%% INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+%% BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+%% LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+%% CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+%% LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+%% ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+%% POSSIBILITY OF SUCH DAMAGE.
+
 %% File:    re.erl
 %% Author:  Robert Virding
 %% Purpose: POSIX regular expression matching
@@ -58,9 +83,15 @@
 %%  The grammar of the current regular expressions. The actual parser
 %%  is a recursive descent implementation of the grammar.
 
+%% reg(Chars) -> {ok,{RegExp,SúbCount},RestChars}.
+
 reg(Cs0) ->
-    {RE,Sc,Cs1} = reg(Cs0, 0),
-    {ok,{RE,Sc},Cs1}.
+    case catch reg(Cs0, 0) of
+	{RE,Sc,Cs1} -> {ok,{RE,Sc},Cs1};
+	{parse_error,E} -> {error,E}
+    end.
+
+parse_error(E) -> throw({parse_error,E}).
 
 reg(Cs, Sn) -> alt(Cs, Sn).
 
@@ -77,6 +108,14 @@ alt1([$||Cs0], Sn0) ->
     {[L|Rs],Sn2,Cs2};
 alt1(Cs, Sn) -> {[],Sn,Cs}.
 
+%% Parse a sequence of regexps. Don't allow the empty sequence.
+%% seq(Cs0, Sn0) ->
+%%     {L,Sn1,Cs1} = repeat(Cs0, Sn0),
+%%     case seq1(Cs1, Sn1) of
+%% 	{[],Sn2,Cs2} -> {L,Sn2,Cs2};
+%% 	{Rs,Sn2,Cs2} -> {{seq,[L|Rs]},Sn2,Cs2}
+%%     end.
+
 %% seq(Chars, SubNumber) -> {RegExp,SubNumber,Chars}.
 %% Parse a sequence of regexps. Allow the empty sequence, returns epsilon.
 
@@ -86,14 +125,6 @@ seq(Cs0, Sn0) ->
 	{[R],Sn1,Cs1} -> {R,Sn1,Cs1};
 	{Rs,Sn1,Cs1} -> {{seq,Rs},Sn1,Cs1}
     end.
-
-%% Parse a sequence of regexps. Don't allow the empty sequence.
-%% seq(Cs0, Sn0) ->
-%%     {L,Sn1,Cs1} = repeat(Cs0, Sn0),
-%%     case seq1(Cs1, Sn1) of
-%% 	{[],Sn2,Cs2} -> {L,Sn2,Cs2};
-%% 	{Rs,Sn2,Cs2} -> {{seq,[L|Rs]},Sn2,Cs2}
-%%     end.
 
 seq1([C|_]=Cs0, Sn0) when C /= $|, C /= $) ->
     {L,Sn1,Cs1} = repeat(Cs0, Sn0),
@@ -246,8 +277,6 @@ number(Cs) -> {none,Cs}.
 number([C|Cs], Acc) when C >= $0, C =< $9 ->
     number(Cs, 10*Acc + (C - $0));
 number(Cs, Acc) -> {Acc,Cs}.
-
-parse_error(E) -> throw({error,E}).
 
 string_between(Cs1, Cs2) ->
     substr(Cs1, 1, length(Cs1)-length(Cs2)).
@@ -610,7 +639,7 @@ sh_special_char(C) -> special_char(C).
 parse(Cs) -> parse1(Cs, parse_cflags([])).	%Default flags
 
 parse1(Cs, _) ->				%Flags not used here!
-    case catch reg(Cs) of
+    case reg(Cs) of
 	{ok,R,[]} -> {ok,{regexp,R}};
 	{ok,_R,[C|_]} -> {error,{illegal,[C]}};
 	{error,E} -> {error,E}
@@ -632,7 +661,7 @@ compile1(Cs, Fl) when is_list(Cs) ->
 compile1({regexp,R}, Fl) ->
     case comp(R, Fl) of
 	{ok,Nfa} -> {ok,Nfa};
-	Error -> Error
+	Error -> Error				%comp never returns an error!
     end;
 compile1(#nfa{}=N, _) -> {ok,N}.		%Use compile time flags
 
@@ -735,7 +764,7 @@ best_match_str(Cs0, P, Pc, Nfa) ->
     case best_match_str(Cs0, P, Pc, Nfa, {0,-1,[]}) of
 	{St,Len,Cs1} when Len >= 0 ->
 	    {match,{St,Len,substr(Cs1, 1, Len)}};
-	{_,_} -> nomatch
+	{_,_,_} -> nomatch
     end.
 
 best_match_str(Cs0, P, Pc0, Nfa, {_,Mlen,_}=M) ->
@@ -755,7 +784,7 @@ best_smatch_str(Cs0, P, Pc, Nfa) ->
     case best_smatch_str(Cs0, P, Pc, Nfa, {0,-1,[],none}) of
 	{St,Len,Cs1,Subs} when Len >= 0 ->
 	    {match,{St,Len,substr(Cs1, 1, Len)},fix_subs_str(Subs, St, Cs1)};
-	{_,_} -> nomatch
+	{_,_,_,_} -> nomatch
     end.
 
 best_smatch_str(Cs0, P, Pc0, Nfa, {_,Mlen,_,_}=M) ->
@@ -804,7 +833,7 @@ best_smatch_bin(Bin, P, Pc, Nfa) ->
 	{St,Len,Subs} when Len >= 0 ->
 	    {match,{St,Len,bin_to_list(Bin, St, Len)},
 	     fix_subs_bin(Subs, Bin)};
-	{_,_} -> nomatch
+	{_,_,_} -> nomatch
     end.
 
 best_smatch_bin(Bin, P, Pc0, Nfa, {_,Mlen,_}=M) ->
@@ -1036,14 +1065,11 @@ gsub1(S, RegExp, Rep, Fl) ->
     end.
 
 gsub_str(Cs, #nfa{cflags=Fl}=Nfa, Rep, _) ->
-    Res = case Fl#cflags.sub of
-	      true -> gssub_str(Cs, 1, bos, Nfa, Rep);
-	      false -> gsub_str(Cs, 1, bos, Nfa, Rep)
-	  end,
-    case Res of
-	{NewStr,N} -> {ok,NewStr,N};
-	no -> {ok,Cs,0}
-    end.
+    {NewStr,N} = case Fl#cflags.sub of
+		     true -> gssub_str(Cs, 1, bos, Nfa, Rep);
+		     false -> gsub_str(Cs, 1, bos, Nfa, Rep)
+		 end,
+    {ok,NewStr,N}.
 
 gsub_str(Cs0, P, Pc0, Nfa, Rep) ->
     case next_match_str(Cs0, P, Pc0, Nfa) of
@@ -1078,14 +1104,11 @@ gssub_str(Cs0, P, Pc0, Nfa, Rep) ->
     end.
 
 gsub_bin(Bin, #nfa{cflags=Fl}=Nfa, Rep, _) ->
-    Res = case Fl#cflags.sub of
-	      true -> gssub_bin(Bin, 1, bos, Nfa, Rep);
-	      false -> gsub_bin(Bin, 1, bos, Nfa, Rep)
-	  end,
-    case Res of
-	{NewStr,N} -> {ok,list_to_binary(NewStr),N};
-	no -> {ok,Bin,0}
-    end.
+    {NewStr,N} = case Fl#cflags.sub of
+		     true -> gssub_bin(Bin, 1, bos, Nfa, Rep);
+		     false -> gsub_bin(Bin, 1, bos, Nfa, Rep)
+		 end,
+    {ok,list_to_binary(NewStr),N}.
 
 gsub_bin(Bin, P, Pc0, Nfa, Rep) ->
     case next_match_bin(Bin, P, Pc0, Nfa) of
