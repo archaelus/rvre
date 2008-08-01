@@ -3,7 +3,7 @@
 %% @version {@vsn}, {@date} {@time}
 %% @doc 
 %% @end
--module(re_tests).
+-module(rvre_tests).
 
 -include_lib("eunit.hrl").
 

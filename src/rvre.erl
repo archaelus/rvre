@@ -32,7 +32,7 @@
 %% from AWK. There is a parallel set of functions which also return
 %% values of the sub-expressions.
 
--module(re).
+-module(rvre).
 
 -export([sh_to_awk/1,parse/1,compile/1,compile/2,format_error/1]).
 -export([match/2,match/3,best_match/2,best_match/3,matches/2,matches/3,
