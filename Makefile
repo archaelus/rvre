@@ -23,7 +23,10 @@ EXTRA_DIALYZER_BEAM_FILES ?=$(wildcard lib/oserl*/ebin/*.beam lib/common_lib*/eb
 
 NODE ?=-name ${APP_NAME}@127.0.0.1
 
-all: ${BEAM_FILES} src/TAGS
+all: ebin ${BEAM_FILES} src/TAGS
+
+ebin:
+	mkdir ebin
 
 release: ${BEAM_FILES} test xref dialyzer.report docs releases/${VSN}/${APP_NAME}.tar.gz
 
