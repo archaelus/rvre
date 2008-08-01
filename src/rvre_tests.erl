@@ -14,5 +14,5 @@ regression_1_test() ->
                     " type=\"result\" id=\"jcm_R_0\" from=\"localdomain\" to=\"[jcm_proxy]nonode@nohost/connection from [0.37.0]\""},
                    {106,106,
                     "<session xmlns=\"http://jabber.org/protocol/connectionmanager\" id=\"jcm_S_0\">\n      <create/>\n    </session>"}}},
-                 re:match(<<"<iq type=\"result\" id=\"jcm_R_0\" from=\"localdomain\" to=\"[jcm_proxy]nonode@nohost/connection from [0.37.0]\"><session xmlns=\"http://jabber.org/protocol/connectionmanager\" id=\"jcm_S_0\">\n      <create/>\n    </session></iq>">>,"^[^>]*<iq([^>]*)>(.*)</iq>",[{subexpr,true}])
+                 rvre:match(<<"<iq type=\"result\" id=\"jcm_R_0\" from=\"localdomain\" to=\"[jcm_proxy]nonode@nohost/connection from [0.37.0]\"><session xmlns=\"http://jabber.org/protocol/connectionmanager\" id=\"jcm_S_0\">\n      <create/>\n    </session></iq>">>,"^[^>]*<iq([^>]*)>(.*)</iq>",[{subexpr,true}])
                 ).
