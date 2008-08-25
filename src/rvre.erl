@@ -683,15 +683,16 @@ format_error({char_class,What}) ->
 %%  Length. N.B. If the regular expression is already compiled then
 %%  the flags used when compiling are used here.
 
-match(S, RegExp) -> match(S, RegExp, []).	%Default flags
-match(S, RegExp, Fls) -> match1(S, RegExp, parse_cflags(Fls)).
+match(Atom, _) when is_atom(Atom) -> exit(badarg);
+match(S, RegExp) when is_list(S); is_binary(S) -> match(S, RegExp, []).	%Default flags
+match(S, RegExp, Fls) when is_list(S); is_binary(S) -> match1(S, RegExp, parse_cflags(Fls)).
 
 match1(S, RegExp, Fl) ->
     case compile1(RegExp, Fl) of
 	{ok,Nfa} when is_binary(S) ->
 	    %% Match against a binary.
 	    match_bin(S, Nfa, Fl);
-	{ok,Nfa} ->
+	{ok,Nfa} when is_list(S) ->
 	    %% Match against a string.
 	    match_str(S, Nfa, Fl);
 	Error -> Error
