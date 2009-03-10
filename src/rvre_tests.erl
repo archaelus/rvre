@@ -5,7 +5,7 @@
 %% @end
 -module(rvre_tests).
 
--include_lib("eunit.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 regression_1_test() ->
     ?assertMatch({match,{1,216,
